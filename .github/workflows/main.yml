@@ -35,7 +35,7 @@ jobs:
         run: |
           terraform apply -auto-approve
           # Aquí agregamos un nuevo comando para obtener el token SAS después de aplicar los cambios
-          echo "::set-output name=sas_token::$(terraform output sas_token)"
+          echo "SAS_TOKEN=$(terraform output sas_token)" >> $GITHUB_ENV
         working-directory: ./almacenamiento
   deploy_app_service:
     name: Deploy App Service
@@ -58,8 +58,11 @@ jobs:
       - name: Terraform Init
         run: terraform init
         working-directory: ./iac
+
+      - name: Load SAS Token from Environment File
+        run: echo "${{ env.SAS_TOKEN }}" > sas_token.txt
+        working-directory: ./iac
+        
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        env:
-          SAS_TOKEN: ${{ needs.create_infrastructure.outputs.sas_token }}
         working-directory: ./iac
