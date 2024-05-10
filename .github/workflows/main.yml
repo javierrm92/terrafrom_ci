@@ -27,16 +27,16 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-
+        working-directory: ./almacenamiento
       - name: Terraform Plan
         run: terraform plan
-
+        working-directory: ./almacenamiento
       - name: Terraform Apply
         run: |
           terraform apply -auto-approve
           # Aquí agregamos un nuevo comando para obtener el token SAS después de aplicar los cambios
           echo "::set-output name=sas_token::$(terraform output sas_token)"
-
+          working-directory: ./almacenamiento
   deploy_app_service:
     name: Deploy App Service
     runs-on: ubuntu-latest
@@ -57,8 +57,9 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-
+        working-directory: ./iac
       - name: Terraform Apply
         run: terraform apply -auto-approve
         env:
           SAS_TOKEN: ${{ needs.create_infrastructure.outputs.sas_token }}
+        working-directory: ./iac
