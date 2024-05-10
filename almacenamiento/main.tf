@@ -26,13 +26,37 @@ resource "azurerm_storage_container" "example" {
 }
 
 # Generar token SAS para la cuenta de almacenamiento
-resource "azurerm_storage_account_sas" "example" {
+data "azurerm_storage_account_sas" "example" {
   connection_string = azurerm_storage_account.example.primary_connection_string
   https_only        = true
-  start             = "2024-05-09"
-  expiry            = "2024-12-31"
+  start             = timestamp()
+  expiry            = timeadd(timestamp(), "2h")
+  permissions {
+    read    = true
+    write   = true
+    delete  = true
+    list    = true
+    add     = true
+    create  = true
+    update  = false
+    process = true
+    filter  = false
+    tag     = false
+  }
+  resource_types {
+    service   = true
+    container = true
+    object    = true
+  }
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
 }
 
 output "sas_token" {
-  value = azurerm_storage_account_sas.example.sas
+  value     = data.azurerm_storage_account_sas.example.sas
+  sensitive = true
 }
