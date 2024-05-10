@@ -1,1 +1,64 @@
+name: Terraform Automation
 
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create_infrastructure:
+    name: Create Infrastructure
+    runs-on: ubuntu-latest
+    outputs:
+      sas_token: ${{ steps.get_sas_token.outputs.sas_token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: login azure
+        uses: azure/login@v1
+        with:
+          creds: "${{ secrets.AZURE_CREDENTIAL_DEV }}"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve
+          # Aquí agregamos un nuevo comando para obtener el token SAS después de aplicar los cambios
+          echo "::set-output name=sas_token::$(terraform output sas_token)"
+
+  deploy_app_service:
+    name: Deploy App Service
+    runs-on: ubuntu-latest
+    needs: create_infrastructure
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: login azure
+        uses: azure/login@v1
+        with:
+          creds: "${{ secrets.AZURE_CREDENTIAL }}"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env:
+          SAS_TOKEN: ${{ needs.create_infrastructure.outputs.sas_token }}
